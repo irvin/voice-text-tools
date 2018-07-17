@@ -12,7 +12,7 @@
             // "args": ["-s"]
             // "args": ["-s", "error.txt"]
             // "args": ["-s", "lms.txt"]
-            "args": ["-u", "setences.txt"]
+            "args": ["-c", "all.txt", "CnsPhonetic2016-08v2.cin"]
         }
     ]
 }

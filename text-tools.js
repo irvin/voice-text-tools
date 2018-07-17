@@ -3,21 +3,23 @@ const fs = require('fs');
 // command arguments
 let feature = process.argv[2] || null;
 let fnOne = process.argv[3] || null;
-// var fnTwo = process.argv[4] || null;
+var fnTwo = process.argv[4] || null;
 
 let helpMsg = `
 please select feature:
 \t-u txtfile - unique sentences by lines
 \t-f txtfile - shuffle lines of input file
 \t-s txtfile - sort file content by lines
+\t-c txtfile input_methud.cin - use input method table (*.cin file) to calculate txtfile coverage of pronunciation
 `;
 
 const errMsg = {
     noFeature: new Error(``),
-    noFileOne: new Error(`Missing input filename`)
+    noFileOne: new Error(`Missing input filename`),
+    noFileTwo: new Error(`Missing second file`)
 };
 
-if (!feature || !['-s', '-u'].includes(feature)) {
+if (!feature || !['-s', '-u', '-f', '-c'].includes(feature)) {
     console.error(errMsg.noFeature);
     return;
 }
@@ -26,7 +28,7 @@ if (!feature || !['-s', '-u'].includes(feature)) {
 let txtOne = null;
 try {
     if (fnOne) txtOne = fs.readFileSync(fnOne, 'utf-8');
-    // var txtTwo = (fnTwo)? fs.readFileSync(fnTwo, 'utf-8') : null;    
+    if (fnTwo) txtTwo = fs.readFileSync(fnTwo, 'utf-8');
 }
 catch (error) {
     console.error(error);
@@ -43,6 +45,48 @@ function arrayShuffle(a) {  // https://stackoverflow.com/a/6274381
 }
 
 switch (feature) {
+    case '-c': {
+        if (!txtOne) {
+            console.error(errMsg.noFileOne);
+            return;
+        }
+        if (!txtTwo) {
+            console.error(errMsg.noFileTwo);
+            return;
+        }
+
+        // read cin table and convert to obj map of char to phonetic
+        let [cinObj, phoneticNum] = function(cinFile){
+            let cinTable = cinFile.split('\r\n');
+            cinTable = cinTable.filter(line => { return !['#', '%'].includes(line[0]); }); 
+            cinTable = cinTable.filter(line => { return (line.length > 0); }); 
+            let cinObj = {};
+            let allPhonetic = {};
+            cinTable.forEach(line => {
+                let [phe, char] = line.split(/\s|\t/);
+                cinObj[char] = phe.toString();
+                allPhonetic[phe] = 1;
+            });
+            return [cinObj, Object.keys(allPhonetic).length];
+        }(txtTwo);
+
+        // read sentences file and convert to non-repeat chars array
+        let txtAryOne = txtOne.split('\n');
+        let allCharObj = {};
+        txtAryOne.forEach(line => {
+            for (i=0; i<line.length; i++) allCharObj[line[i]] = 1;
+        });
+        let allCharAry = Object.keys(allCharObj);   // all non-repeat chars
+
+        let allPhoneObj = {};
+        allCharAry.forEach(cha => { allPhoneObj[cinObj[cha]] = 1; });
+        let allPhoneLen = Object.keys(allPhoneObj).length;   // all non-repeat phonetic
+
+        console.log(`Total numbers of phonetic in ${fnTwo} are ${phoneticNum}`);
+        console.log(`Numbers of non-repeat phonetic of characters in ${fnOne} are ${allPhoneLen}`);
+        console.log(`We have cover ${Math.round(allPhoneLen/phoneticNum*10000)/100}% of the pronunciations.`)
+    } break;
+
     case '-u': {
         if (!txtOne) {
             console.error(errMsg.noFileOne);
