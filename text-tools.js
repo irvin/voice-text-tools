@@ -10,7 +10,7 @@ please select feature:
 \t-u txtfile - unique sentences by lines
 \t-f txtfile - shuffle lines of input file
 \t-s txtfile - sort file content by lines
-\t-c txtfile input_methud.cin - use input method table (*.cin file) to calculate txtfile coverage of pronunciation
+\t-c txtfile input_method.cin - use input method table to calculate pronunciation coverage rate of txtfile
 `;
 
 const errMsg = {
@@ -83,7 +83,7 @@ switch (feature) {
         let allPhoneLen = Object.keys(allPhoneObj).length;   // all non-repeat phonetic
 
         console.log(`Total numbers of phonetic in ${fnTwo} are ${phoneticNum}`);
-        console.log(`Numbers of non-repeat phonetic of characters in ${fnOne} are ${allPhoneLen}`);
+        console.log(`Numbers of phonetic from ${allCharAry.length} characters in ${fnOne} are ${allPhoneLen}`);
         console.log(`We have cover ${Math.round(allPhoneLen/phoneticNum*10000)/100}% of the pronunciations.`)
     } break;
 

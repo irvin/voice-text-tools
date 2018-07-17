@@ -28,6 +28,6 @@ count total numbers of phonetics within the input method `*.cin` file, and calcu
 ```
 ✗ node text-tools.js -c all.txt CnsPhonetic2016-08v2.cin
 Total numbers of phonetic in CnsPhonetic2016-08v2.cin are 1567
-Numbers of non-repeat phonetic of characters in all.txt are 861
+Numbers of phonetic from 2015 characters in all.txt are 861
 We have cover 54.95% of the pronunciations.
 ```
