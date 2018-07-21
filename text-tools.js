@@ -3,7 +3,8 @@ const fs = require('fs');
 // command arguments
 let feature = process.argv[2] || null;
 let fnOne = process.argv[3] || null;
-var fnTwo = process.argv[4] || null;
+let fnTwo = process.argv[4] || null;
+let args = process.argv || null;
 
 let helpMsg = `
 please select feature:
@@ -62,10 +63,21 @@ switch (feature) {
             cinTable = cinTable.filter(line => { return (line.length > 0); }); 
             let cinObj = {};
             let allPhonetic = {};
+            let ignore = [];
+            let ignoreRegex = null;
+
+            // ignore specific tones in .cin, eg. "3,4,6,7" in Chinese Zhuyin
+            if (args[5] == '-i' && args[6]) {
+                ignore = args[6].split(',');
+                ignoreRegex = new RegExp(ignore.join('|'));
+            }
+
             cinTable.forEach(line => {
                 let [phe, char] = line.split(/\s|\t/);
-                cinObj[char] = phe.toString();
-                allPhonetic[phe] = 1;
+                let pheStr = phe.toString();
+                if (ignoreRegex) pheStr = pheStr.replace(ignoreRegex, '');
+                cinObj[char] = pheStr;
+                allPhonetic[pheStr] = 1;
             });
             return [cinObj, Object.keys(allPhonetic).length];
         }(txtTwo);
@@ -84,7 +96,7 @@ switch (feature) {
 
         console.log(`Total numbers of phonetic in ${fnTwo} are ${phoneticNum}`);
         console.log(`Numbers of phonetic from ${allCharAry.length} characters in ${fnOne} are ${allPhoneLen}`);
-        console.log(`We have cover ${Math.round(allPhoneLen/phoneticNum*10000)/100}% of the pronunciations.`)
+        console.log(`We have cover ${Math.round(allPhoneLen/phoneticNum*10000)/100}% of the pronunciations.`);
     } break;
 
     case '-u': {

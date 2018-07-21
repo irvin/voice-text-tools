@@ -12,7 +12,8 @@
             // "args": ["-s"]
             // "args": ["-s", "error.txt"]
             // "args": ["-s", "lms.txt"]
-            "args": ["-c", "all.txt", "CnsPhonetic2016-08v2.cin"]
+            // "args": ["-c", "all.txt", "CnsPhonetic2016-08v2.cin"]
+            "args": ["-c", "all.txt", "CnsPhonetic2016-08v2.cin", "-i", "3,4,6,7"]
         }
     ]
 }
