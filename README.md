@@ -3,6 +3,12 @@ Tools to modify sentences data of Common Voice project
 
 (MIT License)
 
+### combine all txt files inside folders into all.txt
+```
+✗ node text-tools.js -a ./
+file saved as all.txt
+```
+
 ### remove duplicate sentences in txt file
 ```
 ✗ node text-tools.js -u all.txt
