@@ -130,8 +130,13 @@ switch (feature) {
             console.error(errMsg.noFileOne);
             return;
         }
+
+        let txtAryOne = txtOne.split('\n');
+        txtAryOne = txtAryOne.map(sentence => sentence.trim());
+        txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
+
         let fn = 'all.txt';
-        let err = fs.writeFileSync(fn, txtOne);
+        let err = fs.writeFileSync(fn, txtAryOne.join('\n'));
         if (err)
             console.log(err);
         else
