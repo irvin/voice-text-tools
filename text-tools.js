@@ -1,4 +1,5 @@
-const fs = require('fs');
+const fs = require('fs'),
+    path = require('path');
 
 // command arguments
 let feature = process.argv[2] || null;
@@ -8,6 +9,7 @@ let args = process.argv || null;
 
 let helpMsg = `
 please select feature:
+\t-a folders - combine all txt files inside folder into all.txt
 \t-u txtfile - unique sentences by lines
 \t-f txtfile - shuffle lines of input file
 \t-s txtfile - sort file content by lines
@@ -16,20 +18,44 @@ please select feature:
 
 const errMsg = {
     noFeature: new Error(``),
-    noFileOne: new Error(`Missing input filename`),
+    noFileOne: new Error(`Missing file/directory as first argument`),
     noFileTwo: new Error(`Missing second file`)
 };
 
-if (!feature || !['-s', '-u', '-f', '-c'].includes(feature)) {
+if (!feature || !['-a', '-s', '-u', '-f', '-c'].includes(feature)) {
     console.error(errMsg.noFeature);
     return;
 }
-// console.log(feature, fnOne, fnTwo);
+// console.log('feature, fnOne, fnTwo:', feature, fnOne, fnTwo);
 
-let txtOne = null;
+// https://stackoverflow.com/a/28289589
+function getFilesInPathSync(currentDirPath, callback) {
+    fs.readdirSync(currentDirPath).forEach(function (name) {
+        var filePath = path.join(currentDirPath, name);
+        var stat = fs.statSync(filePath);
+        if (stat.isFile())
+            callback(filePath, stat);
+        else if (stat.isDirectory())
+            getFilesInPathSync(filePath, callback);
+    });
+}
+
+let txtOne = '';
 try {
-    if (fnOne) txtOne = fs.readFileSync(fnOne, 'utf-8');
-    if (fnTwo) txtTwo = fs.readFileSync(fnTwo, 'utf-8');
+    if (fs.statSync(fnOne).isDirectory()) {
+        let filesPath = [];
+        getFilesInPathSync(fnOne, function(filePath, stat) {
+            if (filePath.endsWith('.txt')) filesPath.push(filePath);
+        });
+        filesPath.forEach(function(fileName){
+            txtOne = txtOne + fs.readFileSync(fileName, 'utf-8');
+            txtOne = txtOne + '\n';
+        });
+    }
+    else {
+        if (fnOne) txtOne = fs.readFileSync(fnOne, 'utf-8');
+        if (fnTwo) txtTwo = fs.readFileSync(fnTwo, 'utf-8');    
+    };
 }
 catch (error) {
     console.error(error);
@@ -97,6 +123,19 @@ switch (feature) {
         console.log(`Total numbers of phonetic in ${fnTwo} are ${phoneticNum}`);
         console.log(`Numbers of phonetic from ${allCharAry.length} characters in ${fnOne} are ${allPhoneLen}`);
         console.log(`We have cover ${Math.round(allPhoneLen/phoneticNum*10000)/100}% of the pronunciations.`);
+    } break;
+
+    case '-a': {
+         if (!txtOne) {
+            console.error(errMsg.noFileOne);
+            return;
+        }
+        let fn = 'all.txt';
+        let err = fs.writeFileSync(fn, txtOne);
+        if (err)
+            console.log(err);
+        else
+            console.log("file saved as " + fn);
     } break;
 
     case '-u': {
