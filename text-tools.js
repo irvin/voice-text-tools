@@ -14,6 +14,7 @@ please select feature:
 \t-f txtfile - shuffle lines of input file
 \t-s txtfile - sort file content by lines
 \t-c txtfile input_method.cin - use input method table to calculate pronunciation coverage rate of txtfile
+\t-o txtfile txtref.txt - calculate how many chars from char_list.txt appearing in txtfile
 `;
 
 const errMsg = {
@@ -22,7 +23,7 @@ const errMsg = {
     noFileTwo: new Error(`Missing second file`)
 };
 
-if (!feature || !['-a', '-s', '-u', '-f', '-c'].includes(feature)) {
+if (!feature || !['-a', '-s', '-u', '-f', '-c', '-o'].includes(feature)) {
     console.error(errMsg.noFeature);
     return;
 }
@@ -55,7 +56,7 @@ try {
     else {
         if (fnOne) txtOne = fs.readFileSync(fnOne, 'utf-8');
         if (fnTwo) txtTwo = fs.readFileSync(fnTwo, 'utf-8');    
-    };
+    }
 }
 catch (error) {
     console.error(error);
@@ -72,6 +73,59 @@ function arrayShuffle(a) {  // https://stackoverflow.com/a/6274381
 }
 
 switch (feature) {
+    case '-o': {
+        if (!txtOne) {
+            console.error(errMsg.noFileOne);
+            return;
+        }
+        if (!txtTwo) {
+            console.error(errMsg.noFileTwo);
+            return;
+        }
+
+        var convertToNonRepeatCharArray = function(txtFile) {
+            let txtAryOne = txtFile.split('\n');
+            let allCharObj = {};
+            txtAryOne.forEach(line => {
+                for (i=0; i<line.length; i++) allCharObj[line[i]] = 1;
+            });
+            return Object.keys(allCharObj);   // all non-repeat chars
+        };
+        let charsOne = convertToNonRepeatCharArray(txtOne);
+        let charsTwo = convertToNonRepeatCharArray(txtTwo);
+
+        // check how many chars from charsTwo appear in charsOne 
+        // compare both arry to each other
+        let charsTwoCoverStat = function(allChars, commonChars) {
+            return charsTwo.map(function(char) {
+                return charsOne.includes(char);
+            });
+        }(charsOne, charsTwo);
+
+        // list chars in charTwo which is not available in charOne
+        let missingChars = [];
+        let availChars = [];
+        
+        for (const index in charsTwo) {
+            // console.log(`${index}: ${charsTwo[index]}: ${charsTwoCoverStat[index]}`);
+            if (charsTwoCoverStat[index]) 
+                availChars.push(charsTwo[index]);
+            else
+                missingChars.push(charsTwo[index]);
+        }
+
+        let coverRate = Math.round(availChars.length/charsTwo.length*1000)/10;
+        let missRate = Math.round(missingChars.length/charsTwo.length*1000)/10;
+
+        console.log(`Numbers of chars in ${fnOne} are ${charsOne.length}`);
+        console.log(`Numbers of chars in ${fnTwo} are ${charsTwo.length}`);
+        console.log(`--------------------`);
+        // console.log(`${fnOne} includes ${availChars.length} chars from ${fnTwo} (${coverRate}%): [${availChars}]`);
+        console.log(`${fnOne} includes ${availChars.length} chars from ${fnTwo} (${coverRate}%)`);
+        console.log(`${fnOne} missing ${missingChars.length} chars from ${fnTwo} (${missRate}%):`);
+        console.log(`[${missingChars}]`);
+    } break;
+
     case '-c': {
         if (!txtOne) {
             console.error(errMsg.noFileOne);
