@@ -34,8 +34,8 @@ Count total numbers of phonetics within the input method table `*.cin` file, and
 ```
 ✗ node text-tools.js -c all.txt CnsPhonetic2016-08v2.cin
 Total numbers of phonetic in CnsPhonetic2016-08v2.cin are 1567
-Numbers of phonetic from 2015 characters in all.txt are 861
-We have cover 54.95% of the pronunciations.
+Numbers of phonetic from 2905 characters in all.txt are 993
+We have cover 63.37% of the pronunciations.
 ```
 
 ### calculate the syllable coverage of sentences (and ignore specific keys)
@@ -53,11 +53,11 @@ We have cover 76.4% of the pronunciations.
 ### calculate the coveraged rate of chars from first txt to second txt, and list all missing chars
 
 ```
-✗ node text-tools.js -o all.txt 教育部4808常用字.txt
+✗ node text-tools.js -o all.txt 教育部2015常用字99.75%\(3593字\).txt
 Numbers of chars in all.txt are 2905
-Numbers of chars in 教育部4808常用字.txt are 4808
+Numbers of chars in 教育部2015常用字99.75%(3593字).txt are 3593
 --------------------
-all.txt includes 2683 chars from 教育部4808常用字.txt (55.8%)
-all.txt missing 2125 chars from 教育部4808常用字.txt (44.2%):
-[丑,丐,丕,丞,丫,丸,么,尹,乍,乒,乓,乞,乩,于,云,亙,亟,亨,仃,仄......
+all.txt includes 2603 chars from 教育部2015常用字99.75%(3593字).txt (72.4%)
+all.txt missing 990 chars from 教育部2015常用字99.75%(3593字).txt (27.6%):
+[蘇,脂,膚,瑞,妝,勒,宇,姿,挺,伍,肪,蔬,后,錦,膜,埃,忠,艾,唇,撐,炮,扁,櫻,臘,塵,黏,......]
 ```
