@@ -138,7 +138,7 @@ switch (feature) {
 
         // read cin table and convert to obj map of char to phonetic
         let [cinObj, phoneticNum] = function(cinFile){
-            let cinTable = cinFile.split('\r\n');
+            let cinTable = cinFile.split('\n');
             cinTable = cinTable.filter(line => { return !['#', '%'].includes(line[0]); }); 
             cinTable = cinTable.filter(line => { return (line.length > 0); }); 
             let cinObj = {};
