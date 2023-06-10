@@ -1,11 +1,11 @@
-const fs = require('fs'),
-    path = require('path');
+const fs = require('fs');
+const path = require('path');
+
+const availFeatures = ['-a', '-s', '-u', '-f', '-c', '-o'];
 
 // command arguments
-let feature = process.argv[2] || null;
-let fnOne = process.argv[3] || null;
-let fnTwo = process.argv[4] || null;
-let args = process.argv || null;
+const args = process.argv || null;
+const [feature, fnOne, fnTwo] = args.slice(2);
 
 let helpMsg = `
 please select feature:
@@ -18,48 +18,58 @@ please select feature:
 `;
 
 const errMsg = {
-    noFeature: new Error(``),
-    noFileOne: new Error(`Missing file/directory as first argument`),
-    noFileTwo: new Error(`Missing second file`)
+    noFeature: new Error(`Please specify a feature to use: -a, -s, -u, -f, -c, or -o`),
+    noFileOne: new Error(`Please provide a file or directory as the first argument`),
+    noFileContent: new Error(`Didn't find any sentences in the file`),
+    noFileTwo: new Error(`Please provide a second file as the second argument`)
 };
 
-if (!feature || !['-a', '-s', '-u', '-f', '-c', '-o'].includes(feature)) {
+if (!feature || !availFeatures.includes(feature)) {
     console.error(errMsg.noFeature);
+    console.log(helpMsg);
     return;
 }
+if (!fnOne) {
+    console.error(errMsg.noFileOne);
+    console.log(helpMsg);
+    return;
+}  
 // console.log('feature, fnOne, fnTwo:', feature, fnOne, fnTwo);
 
-// https://stackoverflow.com/a/28289589
-function getFilesInPathSync(currentDirPath, callback) {
+function getTxtFilesInPathSync(currentDirPath) {
+    let txtFiles = [];
     fs.readdirSync(currentDirPath).forEach(function (name) {
         var filePath = path.join(currentDirPath, name);
         var stat = fs.statSync(filePath);
-        if (stat.isFile())
-            callback(filePath, stat);
+        if (stat.isFile() && path.extname(name) === '.txt')
+            txtFiles.push(filePath);      
         else if (stat.isDirectory())
-            getFilesInPathSync(filePath, callback);
+            txtFiles = txtFiles.concat(getTxtFilesInPathSync(filePath));
     });
+    return txtFiles;
 }
 
-let txtOne = '';
+let txtOne = '', txtTwo = '';
 try {
-    if (fs.statSync(fnOne).isDirectory()) {
-        let filesPath = [];
-        getFilesInPathSync(fnOne, function(filePath, stat) {
-            if (filePath.endsWith('.txt')) filesPath.push(filePath);
-        });
-        filesPath.forEach(function(fileName){
-            txtOne = txtOne + fs.readFileSync(fileName, 'utf-8');
-            txtOne = txtOne + '\n';
-        });
-    }
-    else {
-        if (fnOne) txtOne = fs.readFileSync(fnOne, 'utf-8');
-        if (fnTwo) txtTwo = fs.readFileSync(fnTwo, 'utf-8');    
-    }
+    let txtFiles = [fnOne];
+    if (fs.statSync(fnOne).isDirectory())
+        txtFiles = getTxtFilesInPathSync(fnOne);
+
+    // console.log('txtFiles:', txtFiles);
+    txtFiles.forEach(function(fileName) {
+        txtOne += fs.readFileSync(fileName, 'utf-8') + '\n';
+    });
+
+    if (fnTwo) 
+        txtTwo = fs.readFileSync(fnTwo, 'utf-8');    
 }
 catch (error) {
     console.error(error);
+    return;
+}
+
+if ((!txtOne) || (fnTwo && !txtTwo)) {
+    console.error(errMsg.noFileContent);
     return;
 }
 
@@ -74,10 +84,6 @@ function arrayShuffle(a) {  // https://stackoverflow.com/a/6274381
 
 switch (feature) {
     case '-o': {
-        if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
         if (!txtTwo) {
             console.error(errMsg.noFileTwo);
             return;
@@ -127,10 +133,6 @@ switch (feature) {
     } break;
 
     case '-c': {
-        if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
         if (!txtTwo) {
             console.error(errMsg.noFileTwo);
             return;
@@ -180,11 +182,6 @@ switch (feature) {
     } break;
 
     case '-a': {
-         if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
-
         let txtAryOne = txtOne.split('\n');
         txtAryOne = txtAryOne.map(sentence => sentence.trim());
         txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
@@ -198,11 +195,6 @@ switch (feature) {
     } break;
 
     case '-u': {
-        if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
-
         let txtAryOne = txtOne.split('\n');
         txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
         txtAryOne = txtAryOne.map(sentence => sentence.trim());
@@ -220,10 +212,6 @@ switch (feature) {
 
     case '-s': {
         // sort
-        if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
 
         let txtAryOne = txtOne.split('\n');
         txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
@@ -244,10 +232,6 @@ switch (feature) {
 
     case '-f': {
         // shuffle
-        if (!txtOne) {
-            console.error(errMsg.noFileOne);
-            return;
-        }
 
         let txtAryOne = txtOne.split('\n');
         txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
