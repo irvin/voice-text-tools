@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const availFeatures = ['-a', '-s', '-u', '-f', '-c', '-o'];
+const availFeatures = ['-a', '-s', '-u', '-f', '-c', '-o', '-d'];
 
 // command arguments
 const args = process.argv || null;
@@ -15,10 +15,11 @@ please select feature:
 \t-s txtfile - sort file content by lines
 \t-c txtfile input_method.cin - use input method table to calculate pronunciation coverage rate of txtfile
 \t-o txtfile txtref.txt - calculate how many chars from char_list.txt appearing in txtfile
+\t-d folder - find duplicate sentences across all txt files in folder
 `;
 
 const errMsg = {
-    noFeature: new Error(`Please specify a feature to use: -a, -s, -u, -f, -c, or -o`),
+    noFeature: new Error(`Please specify a feature to use: -a, -s, -u, -f, -c, -o, or -d`),
     noFileOne: new Error(`Please provide a file or directory as the first argument`),
     noFileContent: new Error(`Didn't find any sentences in the file`),
     noFileTwo: new Error(`Please provide a second file as the second argument`)
@@ -33,7 +34,7 @@ if (!fnOne) {
     console.error(errMsg.noFileOne);
     console.log(helpMsg);
     return;
-}  
+}
 // console.log('feature, fnOne, fnTwo:', feature, fnOne, fnTwo);
 
 function getTxtFilesInPathSync(currentDirPath) {
@@ -42,11 +43,23 @@ function getTxtFilesInPathSync(currentDirPath) {
         var filePath = path.join(currentDirPath, name);
         var stat = fs.statSync(filePath);
         if (stat.isFile() && path.extname(name) === '.txt')
-            txtFiles.push(filePath);      
+            txtFiles.push(filePath);
         else if (stat.isDirectory())
             txtFiles = txtFiles.concat(getTxtFilesInPathSync(filePath));
     });
     return txtFiles;
+}
+
+function preProcessSentences(text) {
+    let sentences = text.split('\n');
+    sentences = sentences.filter(sentence => sentence);    // trim empty lines
+    sentences = sentences.map(sentence => sentence.trim());
+    return sentences;
+}
+
+// 共用的去重函數
+function getUniqueSentences(sentences) {
+    return [...new Set(sentences)];    // array unique, https://stackoverflow.com/a/14438954
 }
 
 let txtOne = '', txtTwo = '';
@@ -60,8 +73,8 @@ try {
         txtOne += fs.readFileSync(fileName, 'utf-8') + '\n';
     });
 
-    if (fnTwo) 
-        txtTwo = fs.readFileSync(fnTwo, 'utf-8');    
+    if (fnTwo)
+        txtTwo = fs.readFileSync(fnTwo, 'utf-8');
 }
 catch (error) {
     console.error(error);
@@ -100,7 +113,7 @@ switch (feature) {
         let charsOne = convertToNonRepeatCharArray(txtOne);
         let charsTwo = convertToNonRepeatCharArray(txtTwo);
 
-        // check how many chars from charsTwo appear in charsOne 
+        // check how many chars from charsTwo appear in charsOne
         // compare both arry to each other
         let charsTwoCoverStat = function(allChars, commonChars) {
             return charsTwo.map(function(char) {
@@ -111,10 +124,10 @@ switch (feature) {
         // list chars in charTwo which is not available in charOne
         let missingChars = [];
         let availChars = [];
-        
+
         for (const index in charsTwo) {
             // console.log(`${index}: ${charsTwo[index]}: ${charsTwoCoverStat[index]}`);
-            if (charsTwoCoverStat[index]) 
+            if (charsTwoCoverStat[index])
                 availChars.push(charsTwo[index]);
             else
                 missingChars.push(charsTwo[index]);
@@ -141,8 +154,8 @@ switch (feature) {
         // read cin table and convert to obj map of char to phonetic
         let [cinObj, phoneticNum] = function(cinFile){
             let cinTable = cinFile.split('\n');
-            cinTable = cinTable.filter(line => { return !['#', '%'].includes(line[0]); }); 
-            cinTable = cinTable.filter(line => { return (line.length > 0); }); 
+            cinTable = cinTable.filter(line => { return !['#', '%'].includes(line[0]); });
+            cinTable = cinTable.filter(line => { return (line.length > 0); });
             let cinObj = {};
             let allPhonetic = {};
             let ignore = [];
@@ -182,9 +195,7 @@ switch (feature) {
     } break;
 
     case '-a': {
-        let txtAryOne = txtOne.split('\n');
-        txtAryOne = txtAryOne.map(sentence => sentence.trim());
-        txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
+        let txtAryOne = preProcessSentences(txtOne);
 
         let fn = 'all.txt';
         let err = fs.writeFileSync(fn, txtAryOne.join('\n'));
@@ -195,10 +206,8 @@ switch (feature) {
     } break;
 
     case '-u': {
-        let txtAryOne = txtOne.split('\n');
-        txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
-        txtAryOne = txtAryOne.map(sentence => sentence.trim());
-        txtAryOne = [...new Set(txtAryOne)];    // array unique, https://stackoverflow.com/a/14438954
+        let txtAryOne = preProcessSentences(txtOne);
+        txtAryOne = getUniqueSentences(txtAryOne);
 
         let filenameSplit = fnOne.split('.');
         let fn = filenameSplit[0] + '_unique.' + filenameSplit[1];
@@ -212,11 +221,8 @@ switch (feature) {
 
     case '-s': {
         // sort
-
-        let txtAryOne = txtOne.split('\n');
-        txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
-        txtAryOne = txtAryOne.map(sentence => sentence.trim());
-        txtAryOne = [...new Set(txtAryOne)];    // array unique, https://stackoverflow.com/a/14438954
+        let txtAryOne = preProcessSentences(txtOne);
+        txtAryOne = getUniqueSentences(txtAryOne);
 
         let txtAryShuffle = txtAryOne.sort();
 
@@ -232,11 +238,8 @@ switch (feature) {
 
     case '-f': {
         // shuffle
-
-        let txtAryOne = txtOne.split('\n');
-        txtAryOne = txtAryOne.filter(sentence => sentence);     // trim empty lines
-        txtAryOne = txtAryOne.map(sentence => sentence.trim());
-        txtAryOne = [...new Set(txtAryOne)];    // array unique, https://stackoverflow.com/a/14438954
+        let txtAryOne = preProcessSentences(txtOne);
+        txtAryOne = getUniqueSentences(txtAryOne);
 
         let txtAryShuffle = arrayShuffle(txtAryOne);
 
@@ -247,7 +250,80 @@ switch (feature) {
         if (err)
             console.log(err);
         else
-            console.log("file saved as " + fn); 
+            console.log("file saved as " + fn);
+    } break;
+
+    case '-d': {
+        // find duplicate sentences across all txt files in folder
+        if (!fs.statSync(fnOne).isDirectory()) {
+            console.error(`Error: ${fnOne} is not a directory`);
+            return;
+        }
+
+        let txtFiles = getTxtFilesInPathSync(fnOne);
+        if (txtFiles.length === 0) {
+            console.log(`No txt files found in ${fnOne}`);
+            return;
+        }
+
+        console.log(`Found ${txtFiles.length} txt files in ${fnOne}:`);
+        txtFiles.forEach(file => console.log(`  - ${path.basename(file)}`));
+        console.log('');
+
+        let sentenceMap = new Map();
+        let totalSentences = 0;
+
+        txtFiles.forEach(filePath => {
+            let content = fs.readFileSync(filePath, 'utf-8');
+            let sentences = preProcessSentences(content);
+
+            totalSentences += sentences.length;
+
+            sentences.forEach(sentence => {
+                if (!sentenceMap.has(sentence)) {
+                    sentenceMap.set(sentence, []);
+                }
+                sentenceMap.get(sentence).push(path.basename(filePath));
+            });
+        });
+
+        let duplicates = [];
+        let uniqueSentences = 0;
+
+        sentenceMap.forEach((files, sentence) => {
+            if (files.length > 1) {
+                duplicates.push({
+                    sentence: sentence,
+                    files: files,
+                    count: files.length
+                });
+            } else {
+                uniqueSentences++;
+            }
+        });
+
+        // 輸出統計結果
+        console.log(`=== 重複句子檢測結果 ===`);
+        console.log(`總句子數: ${totalSentences}`);
+        console.log(`唯一句子數: ${uniqueSentences}`);
+        console.log(`重複句子數: ${duplicates.length}`);
+        console.log(`重複率: ${Math.round(duplicates.length / sentenceMap.size * 1000) / 10}%`);
+        console.log('');
+
+        if (duplicates.length > 0) {
+            console.log(`=== 重複句子列表 ===`);
+            // 按重複次數排序
+            duplicates.sort((a, b) => b.count - a.count);
+
+            duplicates.forEach((dup, index) => {
+                console.log(`${index + 1}. 句子: "${dup.sentence}"`);
+                console.log(`   出現 ${dup.count} 次，檔案: ${dup.files.join(', ')}`);
+                console.log('');
+            });
+        }
+        else {
+            console.log('沒有發現重複句子！');
+        }
     } break;
 }
 
