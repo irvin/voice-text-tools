@@ -37,6 +37,14 @@ if (!fnOne) {
 }
 // console.log('feature, fnOne, fnTwo:', feature, fnOne, fnTwo);
 
+function requireSecondFile(feature, fnTwo) {
+    if (!fnTwo) {
+        console.error(errMsg.noFileTwo);
+        return false;
+    }
+    return true;
+}
+
 function getTxtFilesInPathSync(currentDirPath) {
     let txtFiles = [];
     fs.readdirSync(currentDirPath).forEach(function (name) {
@@ -57,9 +65,32 @@ function preProcessSentences(text) {
     return sentences;
 }
 
-// 共用的去重函數
 function getUniqueSentences(sentences) {
     return [...new Set(sentences)];    // array unique, https://stackoverflow.com/a/14438954
+}
+
+function writeToFile(content, filename) {
+    try {
+        fs.writeFileSync(filename, content, 'utf-8');
+        console.log("file saved as " + filename);
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
+function generateOutputFilename(inputFile, suffix) {
+    let filenameSplit = inputFile.split('.');
+    return filenameSplit[0] + suffix + '.' + filenameSplit[1];
+}
+
+function extractUniqueChars(text) {
+    let allCharObj = {};
+    text.split('').forEach(char => {
+        allCharObj[char] = 1;
+    });
+    return Object.keys(allCharObj);
 }
 
 let txtOne = '', txtTwo = '';
@@ -97,36 +128,23 @@ function arrayShuffle(a) {  // https://stackoverflow.com/a/6274381
 
 switch (feature) {
     case '-o': {
-        if (!txtTwo) {
-            console.error(errMsg.noFileTwo);
+        if (!requireSecondFile(feature, fnTwo)) {
             return;
         }
 
-        var convertToNonRepeatCharArray = function(txtFile) {
-            let txtAryOne = txtFile.split('\n');
-            let allCharObj = {};
-            txtAryOne.forEach(line => {
-                for (i=0; i<line.length; i++) allCharObj[line[i]] = 1;
-            });
-            return Object.keys(allCharObj);   // all non-repeat chars
-        };
-        let charsOne = convertToNonRepeatCharArray(txtOne);
-        let charsTwo = convertToNonRepeatCharArray(txtTwo);
+        let charsOne = extractUniqueChars(txtOne);
+        let charsTwo = extractUniqueChars(txtTwo);
 
         // check how many chars from charsTwo appear in charsOne
-        // compare both arry to each other
-        let charsTwoCoverStat = function(allChars, commonChars) {
-            return charsTwo.map(function(char) {
-                return charsOne.includes(char);
-            });
-        }(charsOne, charsTwo);
+        let charsTwoCoverStat = charsTwo.map(function(char) {
+            return charsOne.includes(char);
+        });
 
         // list chars in charTwo which is not available in charOne
         let missingChars = [];
         let availChars = [];
 
         for (const index in charsTwo) {
-            // console.log(`${index}: ${charsTwo[index]}: ${charsTwoCoverStat[index]}`);
             if (charsTwoCoverStat[index])
                 availChars.push(charsTwo[index]);
             else
@@ -139,15 +157,13 @@ switch (feature) {
         console.log(`Numbers of chars in ${fnOne} are ${charsOne.length}`);
         console.log(`Numbers of chars in ${fnTwo} are ${charsTwo.length}`);
         console.log(`--------------------`);
-        // console.log(`${fnOne} includes ${availChars.length} chars from ${fnTwo} (${coverRate}%): [${availChars}]`);
         console.log(`${fnOne} includes ${availChars.length} chars from ${fnTwo} (${coverRate}%)`);
         console.log(`${fnOne} missing ${missingChars.length} chars from ${fnTwo} (${missRate}%):`);
         console.log(`[${missingChars}]`);
     } break;
 
     case '-c': {
-        if (!txtTwo) {
-            console.error(errMsg.noFileTwo);
+        if (!requireSecondFile(feature, fnTwo)) {
             return;
         }
 
@@ -178,12 +194,7 @@ switch (feature) {
         }(txtTwo);
 
         // read sentences file and convert to non-repeat chars array
-        let txtAryOne = txtOne.split('\n');
-        let allCharObj = {};
-        txtAryOne.forEach(line => {
-            for (i=0; i<line.length; i++) allCharObj[line[i]] = 1;
-        });
-        let allCharAry = Object.keys(allCharObj);   // all non-repeat chars
+        let allCharAry = extractUniqueChars(txtOne);
 
         let allPhoneObj = {};
         allCharAry.forEach(cha => { allPhoneObj[cinObj[cha]] = 1; });
@@ -196,61 +207,32 @@ switch (feature) {
 
     case '-a': {
         let txtAryOne = preProcessSentences(txtOne);
-
-        let fn = 'all.txt';
-        let err = fs.writeFileSync(fn, txtAryOne.join('\n'));
-        if (err)
-            console.log(err);
-        else
-            console.log("file saved as " + fn);
+        writeToFile(txtAryOne.join('\n'), 'all.txt');
     } break;
 
     case '-u': {
         let txtAryOne = preProcessSentences(txtOne);
         txtAryOne = getUniqueSentences(txtAryOne);
-
-        let filenameSplit = fnOne.split('.');
-        let fn = filenameSplit[0] + '_unique.' + filenameSplit[1];
-
-        let err = fs.writeFileSync(fn, txtAryOne.join('\n'));
-        if (err)
-            console.log(err);
-        else
-            console.log("file saved as " + fn);
+        let outputFile = generateOutputFilename(fnOne, '_unique');
+        writeToFile(txtAryOne.join('\n'), outputFile);
     } break;
 
     case '-s': {
         // sort
         let txtAryOne = preProcessSentences(txtOne);
         txtAryOne = getUniqueSentences(txtAryOne);
-
-        let txtAryShuffle = txtAryOne.sort();
-
-        let filenameSplit = fnOne.split('.');
-        let fn = filenameSplit[0] + '_sort.' + filenameSplit[1];
-
-        let err = fs.writeFileSync(fn, txtAryShuffle.join('\n'));
-        if (err)
-            console.log(err);
-        else
-            console.log("file saved as " + fn);
+        let sortedSentences = txtAryOne.sort();
+        let outputFile = generateOutputFilename(fnOne, '_sort');
+        writeToFile(sortedSentences.join('\n'), outputFile);
     } break;
 
     case '-f': {
         // shuffle
         let txtAryOne = preProcessSentences(txtOne);
         txtAryOne = getUniqueSentences(txtAryOne);
-
-        let txtAryShuffle = arrayShuffle(txtAryOne);
-
-        let filenameSplit = fnOne.split('.');
-        let fn = filenameSplit[0] + '_shuffle.' + filenameSplit[1];
-
-        let err = fs.writeFileSync(fn, txtAryShuffle.join('\n'));
-        if (err)
-            console.log(err);
-        else
-            console.log("file saved as " + fn);
+        let shuffledSentences = arrayShuffle(txtAryOne);
+        let outputFile = generateOutputFilename(fnOne, '_shuffle');
+        writeToFile(shuffledSentences.join('\n'), outputFile);
     } break;
 
     case '-d': {
